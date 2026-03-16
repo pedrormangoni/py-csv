@@ -1,25 +1,24 @@
-import os
-import psycopg2
-from app.api.upload import transfer_csv_files
+import sys
 
-# conn = psycopg2.connect(
-#     host=os.getenv("POSTGRES_HOST"),
-#     database=os.getenv("POSTGRES_DB"),
-#     user=os.getenv("POSTGRES_USER"),
-#     password=os.getenv("POSTGRES_PASSWORD"),
-#     port=os.getenv("POSTGRES_PORT")
-# )
+from app.pipeline.etl import run_etl_from_unread
 
-# print("Conectado ao PostgreSQL!")
 
-# cur = conn.cursor()
-# cur.execute("SELECT version();")
+def main():
+	try:
+		summary = run_etl_from_unread()
+	except RuntimeError as exc:
+		print(str(exc))
+		return 1
 
-# version = cur.fetchone()
-# print("Versão do Postgres:", version)
+	print("Resumo ETL")
+	print("Arquivos encontrados:", summary["files_found"])
+	print("Arquivos carregados:", summary["files_loaded"])
+	print("Arquivos inválidos:", summary["files_invalid"])
+	print("Arquivos já processados:", summary["files_skipped"])
+	print("Arquivos com falha:", summary["files_failed"])
+	print("Linhas carregadas:", summary["rows_loaded"])
+	return 0
 
-# cur.close()
-# conn.close()
 
-# Executa a transferência dos arquivos CSV
-transfer_csv_files()
+if __name__ == "__main__":
+	raise SystemExit(main())

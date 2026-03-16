@@ -1,6 +1,7 @@
 # O Upload tem como responsabilidade validar os arquivos CSV que são colocados na pasta 'unread' e transferi-los para a pasta 'read' se estiverem corretos. Ele pode ser implementado para verificar se os arquivos possuem as colunas esperadas, se estão no formato correto e se não estão vazios antes de movê-los para a pasta 'read'.
 
-import csv, shutil
+import csv
+import shutil
 from pathlib import Path
 import logging
 
@@ -23,9 +24,8 @@ def validate_columns_file(file_path: Path) -> bool:
     if not file_path.exists():
         logging.warning(f"{file_path.name} não encontrado.")
         return False
-    # Verifica se o arquivo é um CSV ou XLSX
-    if file_path.suffix.lower() not in [".csv", ".xlsx"]:
-        logging.warning(f"{file_path.name} não é um arquivo CSV ou XLSX.")
+    if file_path.suffix.lower() != ".csv":
+        logging.warning(f"{file_path.name} não é um arquivo CSV.")
         return False
     try:
         # Lê o arquivo CSV e verifica as colunas
@@ -47,22 +47,31 @@ def validate_columns_file(file_path: Path) -> bool:
         return False
 
 
+def get_unread_directory() -> Path:
+    unread_dir = Path(__file__).parent.parent / "datas" / "unread"
+    unread_dir.mkdir(parents=True, exist_ok=True)
+    return unread_dir
+
+
+def get_read_directory() -> Path:
+    read_dir = Path(__file__).parent.parent / "datas" / "read"
+    read_dir.mkdir(parents=True, exist_ok=True)
+    return read_dir
+
+
+def get_unread_csv_files() -> list[Path]:
+    unread_dir = get_unread_directory()
+    return sorted(unread_dir.glob("*.csv"))
+
+
+def move_file_to_read(file_path: Path) -> None:
+    read_dir = get_read_directory()
+    shutil.move(str(file_path), str(read_dir / file_path.name))
+
+
 
 def transfer_csv_files():
-    # Caminho absoluto para a pasta 'unread' a partir do diretório do script
-    base_dir = Path(__file__).parent.parent / "datas" / "unread"
-
-    # Verifica se a pasta existe
-    base_dir.mkdir(parents=True, exist_ok=True)
-
-    # Lista de arquivos CSV na pasta 'unread'
-    csv_files = base_dir.glob("*.csv")
-
-    # Caminho absoluto para a pasta 'read' a partir do diretório do script
-    read_dir = Path(__file__).parent.parent / "datas" / "read"
-
-    # Verifica se a pasta existe
-    read_dir.mkdir(parents=True, exist_ok=True)
+    base_dir = get_unread_directory()
 
     # Contador arquivos transferidos
     transfered_files = 0
@@ -70,12 +79,11 @@ def transfer_csv_files():
     untransfered_files = 0
 
     # Move os arquivos lidosa
-    for arquivo in base_dir.glob("*.csv"):
+    for arquivo in get_unread_csv_files():
         # Valida o tamanho do arquivo
         if arquivo.stat().st_size > 0:
             if validate_columns_file(arquivo):
-                # shutil aceita tanto strings quanto objetos Path
-                shutil.move(str(arquivo), str(read_dir / arquivo.name))
+                move_file_to_read(arquivo)
                 transfered_files += 1
         else:
             untransfered_files += 1
