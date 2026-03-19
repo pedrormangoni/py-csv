@@ -1,4 +1,4 @@
-# ETL de CSV de cartão + base analítica BI
+# ETL de CSV de cartão + base analítica BI (em dev)
 
 Este README descreve como executar o projeto, rodar testes e usar os artefatos SQL de análise.
 
@@ -67,7 +67,7 @@ Ao final da execução, o terminal mostra o resumo:
 - Arquivos com falha
 - Linhas carregadas
 
-## 5) Rodar testes
+## 5) Rodar testes (ainda não completos)
 
 Na pasta `csv-ingestion`:
 
@@ -82,7 +82,7 @@ Separando por tipo:
 /home/pedro/Documents/py-csv/.venv/bin/python -m pytest tests/integration -q -m integration
 ```
 
-## 6) SQL para BI e governança
+## 6) SQL para BI e governança (em dev)
 
 Os artefatos SQL já prontos estão organizados em:
 
