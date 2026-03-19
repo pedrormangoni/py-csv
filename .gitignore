@@ -1,1 +1,37 @@
 docker-desktop-amd64.deb
+
+# Variáveis de ambiente
+.env
+.env.*
+!.env.example
+
+# Cache Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Cache pytest / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Ambientes virtuais
+.venv/
+venv/
+env/
+
+# Distribuição / build
+dist/
+build/
+*.egg-info/
+
+# Mypy / type checkers
+.mypy_cache/
+.dmypy.json
+.ruff_cache/
+
+# IDE
+.vscode/
+.idea/
