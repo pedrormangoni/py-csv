@@ -8,5 +8,6 @@ SELECT
   ROUND(SUM(amount_brl - (amount_usd * fx_rate_brl)), 2) AS diferenca_brl
 FROM stg_credit_card_transactions
 WHERE amount_usd > 0
+  AND amount_brl > 0
 GROUP BY 1
 ORDER BY 1;

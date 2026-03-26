@@ -6,6 +6,7 @@ FROM (
     category,
     SUM(amount_brl) AS total_gasto_brl
   FROM stg_credit_card_transactions
+  WHERE amount_brl > 0
   GROUP BY 1
 ) base
 ORDER BY total_gasto_brl DESC, category ASC

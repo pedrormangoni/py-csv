@@ -7,4 +7,5 @@ SELECT
     ),
     2
   ) AS kpi_percentual_compras_parceladas
-FROM stg_credit_card_transactions;
+FROM stg_credit_card_transactions
+WHERE amount_brl > 0;

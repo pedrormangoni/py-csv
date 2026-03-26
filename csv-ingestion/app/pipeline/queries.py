@@ -5,9 +5,7 @@ Este arquivo contém um conjunto de consultas SQL pré-definidas que respondem
 às principais perguntas de negócio relacionadas a análise de despesas.
 """
 
-# ============================================================================
 # CONSULTAS DE ANÁLISE DE GASTOS POR CATEGORIA
-# ============================================================================
 
 # 1. Gasto Total por Categoria (com ranking)
 GASTO_POR_CATEGORIA = """
@@ -41,9 +39,7 @@ GROUP BY dd.mes, dd.mes_nome, dc.categoria
 ORDER BY dd.mes, total_brl DESC;
 """
 
-# ============================================================================
 # CONSULTAS DE ANÁLISE TEMPORAL
-# ============================================================================
 
 # 3. Evolução de Gastos por Mês (Série Temporal)
 EVOLUCAO_GASTOS_MES = """
@@ -168,9 +164,7 @@ GROUP BY dm.nome_comerciante
 ORDER BY vezes_visitado DESC;
 """
 
-# ============================================================================
 # CONSULTAS DE ANÁLISE DE MOEDAS E COTAÇÃO
-# ============================================================================
 
 # 10. Estatísticas de Cotação por Mês
 COTACAO_POR_MES = """
@@ -201,9 +195,7 @@ FROM fato_transacoes ft
 WHERE ft.valor_usd > 0;
 """
 
-# ============================================================================
 # CONSULTAS DE ANÁLISE DE PARCELAMENTO
-# ============================================================================
 
 # 12. Distribuição de Parcelamento
 DISTRIBUICAO_PARCELAMENTO = """
@@ -233,9 +225,7 @@ GROUP BY ft.total_parcelas
 ORDER BY ft.total_parcelas;
 """
 
-# ============================================================================
 # CONSULTAS DE DASHBOARD / KPIs
-# ============================================================================
 
 # 14. Dashboard de Resumo Geral
 RESUMO_GERAL = """
@@ -277,9 +267,7 @@ GROUP BY dd.data_completa
 ORDER BY dd.data_completa DESC;
 """
 
-# ============================================================================
 # CONSULTAS DE ANÁLISE DE ANOMALIAS
-# ============================================================================
 
 # 16. Transações Anormalmente Altas (Top 5%)
 TRANSACOES_ANOMALAS = """

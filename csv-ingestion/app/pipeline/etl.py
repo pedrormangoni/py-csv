@@ -10,10 +10,14 @@ import psycopg2
 from psycopg2 import OperationalError
 
 from app.api.upload import (
-    EXPECTED_COLUMNS,
     get_unread_csv_files,
     move_file_to_read,
     validate_columns_file,
+)
+
+from app.api.config import (
+    EXPECTED_COLUMNS,
+    FILE_DELIMITER,
 )
 
 
@@ -29,8 +33,9 @@ def _load_env_file():
         key, value = line.split("=", 1)
         os.environ.setdefault(key.strip(), value.strip())
 
-
+# Função para conectar ao banco de dados
 def _get_db_connection():
+    # Coleta as configurações a partir das variáveis de ambiente, com fallback para valores padrão
     _load_env_file()
     host = os.getenv("POSTGRES_HOST", "localhost")
     db_config = {
@@ -40,35 +45,30 @@ def _get_db_connection():
         "password": os.getenv("POSTGRES_PASSWORD", "postgres"),
         "port": os.getenv("POSTGRES_PORT", "5432"),
     }
-
     max_attempts = 20
     retry_seconds = 2
 
-    last_error = $null
-    for ($i = 0; $i -lt $max_attempts; $i++) {
-        try {
+    last_error = None
+    # Tenta conectar usando o host configurado, com retries
+    for _ in range(max_attempts):
+        try:
             return psycopg2.connect(**db_config)
-        } catch [psycopg2.OperationalError] {
-            $last_error = $_.Exception
-            Start-Sleep -Seconds $retry_seconds
-        }
-    }
+        except OperationalError as exc:
+            last_error = exc
+            time.sleep(retry_seconds)
 
-    if ($host -eq "db") {
-        $db_config["host"] = "localhost"
-        for ($i = 0; $i -lt 3; $i++) {
-            try {
+    if host == "db":
+        db_config["host"] = "localhost"
+        for _ in range(3):
+            try:
                 return psycopg2.connect(**db_config)
-            } catch [psycopg2.OperationalError] {
-                $last_error = $_.Exception
-                Start-Sleep -Seconds $retry_seconds
-            }
-        }
-    }
+            except OperationalError as exc:
+                last_error = exc
+                time.sleep(retry_seconds)
 
-    throw $last_error
+    raise last_error
 
-
+# Função para criar as tabelas do Data Warehouse
 def _ensure_tables(conn):
     with conn.cursor() as cur:
         cur.execute(
@@ -113,7 +113,7 @@ def _ensure_tables(conn):
             """
         )
 
-
+# Função para calcular o hash do arquivo
 def _compute_file_hash(file_path: Path) -> str:
     sha = hashlib.sha256()
     with open(file_path, "rb") as file_obj:
@@ -121,11 +121,11 @@ def _compute_file_hash(file_path: Path) -> str:
             sha.update(chunk)
     return sha.hexdigest()
 
-
+# Função para normalizar texto (remover espaços extras)
 def _normalize_text(value: str) -> str:
     return " ".join((value or "").split())
 
-
+# Função para converter string numérica para Decimal, tratando vírgulas e pontos  
 def _parse_decimal(value: str) -> Decimal:
     normalized = (value or "").strip().replace(",", ".")
     if normalized == "":
@@ -135,14 +135,14 @@ def _parse_decimal(value: str) -> Decimal:
     except InvalidOperation as exc:
         raise ValueError(f"Valor numérico inválido: {value}") from exc
 
-
+# Função para processar a data de compra no formato "dd/mm/yyyy"
 def _parse_purchase_date(value: str):
     try:
         return datetime.strptime(value.strip(), "%d/%m/%Y").date()
     except ValueError as exc:
         raise ValueError(f"Data inválida: {value}") from exc
 
-
+# Função para processar a parcela, identificando se é única ou múltipla (ex: "2/3")
 def _parse_installment(value: str):
     cleaned = (value or "").strip()
     if cleaned.lower() in {"única", "unica"}:
@@ -158,6 +158,14 @@ def _parse_installment(value: str):
     return cleaned, None, None
 
 
+def _is_payment_row(description: str, amount_usd: Decimal, amount_brl: Decimal) -> bool:
+    if amount_brl < 0 or amount_usd < 0:
+        return True
+
+    normalized_description = _normalize_text(description).lower()
+    return "pagamento" in normalized_description
+
+# 
 def _hash_row(row: dict) -> str:
     raw = "|".join(
         [
@@ -206,7 +214,7 @@ def _upsert_batch_start(conn, file_path: Path, file_hash: str):
 def _parse_rows(file_path: Path):
     rows = []
     with open(file_path, "r", encoding="utf-8") as csv_file:
-        reader = csv.DictReader(csv_file, delimiter=";")
+        reader = csv.DictReader(csv_file, delimiter=FILE_DELIMITER)
         if reader.fieldnames != EXPECTED_COLUMNS:
             raise ValueError(
                 f"Cabeçalho inválido em {file_path.name}. Esperado: {EXPECTED_COLUMNS}; recebido: {reader.fieldnames}"
@@ -217,6 +225,11 @@ def _parse_rows(file_path: Path):
             installment_raw, installment_number, installment_total = _parse_installment(
                 row["Parcela"]
             )
+            amount_usd = _parse_decimal(row["Valor (em US$)"])
+            amount_brl = _parse_decimal(row["Valor (em R$)"])
+
+            if _is_payment_row(row["Descrição"], amount_usd, amount_brl):
+                continue
 
             rows.append(
                 {
@@ -230,9 +243,9 @@ def _parse_rows(file_path: Path):
                     "installment_raw": installment_raw,
                     "installment_number": installment_number,
                     "installment_total": installment_total,
-                    "amount_usd": _parse_decimal(row["Valor (em US$)"]),
+                    "amount_usd": amount_usd,
                     "fx_rate_brl": _parse_decimal(row["Cotação (em R$)"]),
-                    "amount_brl": _parse_decimal(row["Valor (em R$)"]),
+                    "amount_brl": amount_brl,
                 }
             )
 

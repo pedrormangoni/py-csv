@@ -75,3 +75,28 @@ def test_hash_row_is_stable_for_same_content():
     }
 
     assert etl._hash_row(row) == etl._hash_row(row)
+
+
+def test_is_payment_row_identifies_negative_or_payment_description():
+    assert etl._is_payment_row("Inclusao de Pagamento", Decimal("0"), Decimal("-100.00")) is True
+    assert etl._is_payment_row("Compra normal", Decimal("-1.00"), Decimal("10.00")) is True
+    assert etl._is_payment_row("Pagamento fatura", Decimal("0"), Decimal("0")) is True
+    assert etl._is_payment_row("Supermercado", Decimal("0"), Decimal("150.00")) is False
+
+
+def test_parse_rows_skips_payment_lines(tmp_path: Path):
+    file_path = tmp_path / "fatura.csv"
+    _write_csv(
+        file_path,
+        EXPECTED_COLUMNS,
+        [
+            ["01/01/2026", "Pedro", "1234", "Mercado", "Compra", "única", "0", "0", "100.00"],
+            ["02/01/2026", "Pedro", "1234", "-", "Inclusao de Pagamento", "única", "0", "0", "-100.00"],
+            ["03/01/2026", "Pedro", "1234", "Outros", "Pagamento manual", "única", "0", "0", "0"],
+        ],
+    )
+
+    parsed = etl._parse_rows(file_path)
+
+    assert len(parsed) == 1
+    assert parsed[0]["description"] == "Compra"

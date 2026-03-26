@@ -13,12 +13,14 @@ WITH base AS (
       2
     ) AS percentual_parcelado
   FROM stg_credit_card_transactions
+  WHERE amount_brl > 0
 ),
 mes_top AS (
   SELECT
     DATE_TRUNC('month', purchase_date)::date AS mes,
     SUM(amount_brl) AS valor
   FROM stg_credit_card_transactions
+  WHERE amount_brl > 0
   GROUP BY 1
   ORDER BY valor DESC, mes ASC
   LIMIT 1
@@ -28,6 +30,7 @@ categoria_top AS (
     category,
     SUM(amount_brl) AS valor
   FROM stg_credit_card_transactions
+  WHERE amount_brl > 0
   GROUP BY 1
   ORDER BY valor DESC, category ASC
   LIMIT 1
