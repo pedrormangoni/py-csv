@@ -9,7 +9,7 @@ SELECT
   fx_rate_brl,
   amount_brl,
   COUNT(*) AS repeticoes
-FROM stg_credit_card_transactions
+FROM vw_base_transacoes
 GROUP BY
   purchase_date,
   cardholder_name,

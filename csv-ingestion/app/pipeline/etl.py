@@ -1,6 +1,7 @@
 ﻿import csv
 import hashlib
 import os
+import re
 import time
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
@@ -18,7 +19,17 @@ from app.api.upload import (
 from app.api.config import (
     EXPECTED_COLUMNS,
     FILE_DELIMITER,
+    STAGING_TRANSACTIONS_TABLE,
 )
+
+
+def _safe_sql_identifier(value: str) -> str:
+    if not re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", value or ""):
+        raise ValueError(f"Identificador SQL inválido: {value}")
+    return value
+
+
+STAGING_TABLE = _safe_sql_identifier(STAGING_TRANSACTIONS_TABLE)
 
 
 def _load_env_file():
@@ -89,8 +100,8 @@ def _ensure_tables(conn):
             """
         )
         cur.execute(
-            """
-            CREATE TABLE IF NOT EXISTS stg_credit_card_transactions (
+            f"""
+            CREATE TABLE IF NOT EXISTS {STAGING_TABLE} (
                 id BIGSERIAL PRIMARY KEY,
                 batch_id BIGINT NOT NULL REFERENCES etl_file_batches(id),
                 row_number INTEGER NOT NULL,
@@ -254,7 +265,7 @@ def _parse_rows(file_path: Path):
 
 def _delete_previous_rows(conn, batch_id: int):
     with conn.cursor() as cur:
-        cur.execute("DELETE FROM stg_credit_card_transactions WHERE batch_id = %s", (batch_id,))
+        cur.execute(f"DELETE FROM {STAGING_TABLE} WHERE batch_id = %s", (batch_id,))
 
 
 def _insert_rows(conn, batch_id: int, source_file_name: str, rows: list[dict]):
@@ -262,8 +273,8 @@ def _insert_rows(conn, batch_id: int, source_file_name: str, rows: list[dict]):
     with conn.cursor() as cur:
         for row in rows:
             cur.execute(
-                """
-                INSERT INTO stg_credit_card_transactions (
+                f"""
+                INSERT INTO {STAGING_TABLE} (
                     batch_id,
                     row_number,
                     row_hash,

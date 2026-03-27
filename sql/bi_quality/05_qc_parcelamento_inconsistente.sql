@@ -6,7 +6,7 @@ SELECT
   installment_raw,
   installment_number,
   installment_total
-FROM stg_credit_card_transactions
+FROM vw_base_transacoes
 WHERE
   (installment_total IS NOT NULL AND installment_total <= 0)
   OR (installment_number IS NOT NULL AND installment_number <= 0)

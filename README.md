@@ -1,40 +1,33 @@
-# ETL de CSV de cartão + base analítica BI (em dev)
+# ETL de CSV + Camada Analítica SQL + Dashboard
 
-Este README descreve como executar o projeto, rodar testes e usar os artefatos SQL de análise.
+Projeto para ingestão de faturas CSV de cartão, tratamento de dados e consumo analítico via SQL e Streamlit.
 
-## Fluxo do sistema (resumo)
+## Arquitetura (resumo)
 
-1. **Entrada dos arquivos CSV**
-	- Os arquivos chegam em `csv-ingestion/app/datas/unread/`.
-	- O ETL identifica os CSVs pendentes para processamento.
+1. Entrada de CSVs em `csv-ingestion/app/datas/unread/`.
+2. ETL valida, normaliza, remove pagamentos e carrega `stg_credit_card_transactions`.
+3. Camada SQL cria uma base desacoplada (`vw_base_transacoes`) e views analíticas.
+4. KPIs e dashboard consomem as views.
 
-2. **Validação inicial**
-	- O sistema verifica se o arquivo está vazio e se o cabeçalho bate com o layout esperado.
-	- Arquivos inválidos entram no resumo como não processados.
+## Padronização de tema/fonte
 
-3. **Controle de lote (idempotência)**
-	- É gerado hash do arquivo e feito registro em `etl_file_batches`.
-	- Se o hash já foi carregado anteriormente, o arquivo é marcado como já processado.
+A troca da fonte analítica foi centralizada:
 
-4. **Transformação e carga**
-	- Cada linha do CSV é normalizada e convertida (data, parcelas, valores, cotação).
-	- As linhas são inseridas na tabela `stg_credit_card_transactions`.
-
-5. **Status final e movimentação do arquivo**
-	- Em sucesso: lote marcado como `loaded` e arquivo movido para `csv-ingestion/app/datas/read/`.
-	- Em erro: lote marcado como `failed` com mensagem de erro registrada.
-
-6. **Consumo analítico (BI) (EM DEV)** 
-	- As consultas e visões SQL em `sql/` usam os dados carregados para KPIs, análises e checks de qualidade.
+- ETL usa configurações em `csv-ingestion/app/api/config.py`:
+  - `DW_THEME_NAME`
+  - `DW_STAGING_TRANSACTIONS_TABLE`
+  - `DW_SQL_BASE_VIEW_NAME`
+- SQL analítico usa `vw_base_transacoes`.
+- Para trocar a origem dos SQLs, altere apenas `sql/bi_views/00_vw_base_transacoes.sql`.
 
 ## Pré-requisitos
 
-- Docker + Docker Compose **ou** Python 3.11+
-- PostgreSQL (somente para execução local sem Docker)
+- Docker + Docker Compose
+- Python 3.11+
 
-## 1) Configurar variáveis de ambiente
+## Variáveis de ambiente
 
-Na raiz do projeto, crie/ajuste o arquivo `.env`:
+Arquivo `.env` na raiz (padrão para Docker):
 
 ```env
 POSTGRES_USER=postgres
@@ -44,76 +37,64 @@ POSTGRES_HOST=db
 POSTGRES_PORT=5432
 ```
 
-Se for rodar **local sem Docker**, use `POSTGRES_HOST=localhost`.
+Para execução local (host), use:
 
-## 2) Rodar com Docker (recomendado)
-
-Na raiz do projeto:
-
-```bash
-docker compose up --build
+```env
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5433
 ```
 
-Isso sobe:
-- banco PostgreSQL (`db`)
-- aplicação Python (`app`), que executa o ETL automaticamente
+## Execução rápida
 
-Para subir apenas o banco (ex.: usar pgAdmin ou rodar testes de integração):
+### 1) Instalar dependências
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r csv-ingestion/requirements.txt
+```
+
+### 2) Subir banco
 
 ```bash
 docker compose up -d db
 ```
 
-Para parar:
+### 3) Rodar ETL
 
 ```bash
-docker compose down
-```
-
-## 3) Rodar local (sem Docker)
-
-Na raiz do projeto:
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r csv-ingestion/requirements.txt
 python csv-ingestion/main.py
 ```
 
-## 4) Resultado esperado
-
-Ao final da execução, o terminal mostra o resumo:
-
-- Arquivos encontrados
-- Arquivos carregados
-- Arquivos inválidos
-- Arquivos já processados
-- Arquivos com falha
-- Linhas carregadas
-
-## 5) Rodar testes (ainda não completos)
-
-Na pasta `csv-ingestion`:
+### 4) Aplicar SQL de BI
 
 ```bash
+cd sql/bi_views
+PGPASSWORD=postgres psql -h localhost -p 5433 -U postgres -d credit-card -f 00_apply_all_views.sql
+
+cd ../bi_kpis
+PGPASSWORD=postgres psql -h localhost -p 5433 -U postgres -d credit-card -f 00_apply_all_kpis.sql
+```
+
+### 5) Subir dashboard
+
+```bash
+streamlit run dashboard/streamlit_app.py
+```
+
+Acesse: `http://localhost:8501`
+
+## Estrutura SQL
+
+- `sql/bi_views`: views para consumo analítico (inclui `vw_base_transacoes`).
+- `sql/bi_kpis`: consultas de KPI para cards.
+- `sql/bi_queries`: consultas de negócio.
+- `sql/bi_quality`: checks de qualidade.
+
+## Testes
+
+```bash
+cd csv-ingestion
 /home/pedro/Documents/py-csv/.venv/bin/python -m pytest -q
 ```
-
-Separando por tipo:
-
-```bash
-/home/pedro/Documents/py-csv/.venv/bin/python -m pytest tests/unit -q
-/home/pedro/Documents/py-csv/.venv/bin/python -m pytest tests/integration -q -m integration
-```
-
-## 6) SQL para BI e governança (em dev)
-
-Os artefatos SQL já prontos estão organizados em:
-
-- `sql/bi_queries`: consultas por pergunta de negócio.
-- `sql/bi_views`: camada analítica (`CREATE VIEW`) para consumo em BI.
-- `sql/bi_kpis`: consultas de KPI (cards de dashboard).
-- `sql/bi_quality`: checks de qualidade e consistência dos dados.
-
-Cada pasta contém um `README.md` com instruções de execução no pgAdmin e no `psql`.

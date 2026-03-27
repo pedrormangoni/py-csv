@@ -5,7 +5,7 @@ SELECT
   SUM(amount_brl) AS total_gasto_brl,
   SUM(amount_usd) AS total_gasto_usd,
   ROUND(AVG(amount_brl), 2) AS ticket_medio_brl
-FROM stg_credit_card_transactions
+FROM vw_base_transacoes
 WHERE amount_brl > 0
 GROUP BY 1
 ORDER BY 1;

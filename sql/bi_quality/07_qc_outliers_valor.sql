@@ -2,7 +2,7 @@ WITH stats AS (
   SELECT
     PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY amount_brl) AS q1,
     PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY amount_brl) AS q3
-  FROM stg_credit_card_transactions
+  FROM vw_base_transacoes
 ),
 limites AS (
   SELECT
@@ -23,7 +23,7 @@ SELECT
   t.amount_brl,
   l.limite_inferior,
   l.limite_superior
-FROM stg_credit_card_transactions t
+FROM vw_base_transacoes t
 CROSS JOIN limites l
 WHERE t.amount_brl < l.limite_inferior OR t.amount_brl > l.limite_superior
 ORDER BY t.amount_brl DESC, t.purchase_date DESC;

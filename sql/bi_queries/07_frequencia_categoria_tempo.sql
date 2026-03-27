@@ -3,7 +3,7 @@ SELECT
   category,
   COUNT(*) AS frequencia_compras,
   SUM(amount_brl) AS total_gasto_brl
-FROM stg_credit_card_transactions
+FROM vw_base_transacoes
 WHERE amount_brl > 0
 GROUP BY 1, 2
 ORDER BY 1, frequencia_compras DESC, total_gasto_brl DESC;

@@ -1,6 +1,6 @@
 QUICKSTART (Linux)
 
-Este guia traz apenas os comandos essenciais para rodar no Linux.
+Comandos essenciais para rodar ETL + SQL analítico + dashboard.
 
 ## 1) Preparar ambiente Python
 
@@ -15,14 +15,12 @@ python -m pip install -r csv-ingestion/requirements.txt
 
 ## 2) Subir PostgreSQL com Docker
 
-Na raiz do projeto:
-
 ```bash
 docker compose up -d db
 docker compose ps
 ```
 
-## 3) Configurar variáveis de ambiente (Linux)
+## 3) Variáveis de ambiente (execução local)
 
 ```bash
 export POSTGRES_HOST=localhost
@@ -32,7 +30,9 @@ export POSTGRES_PASSWORD=postgres
 export POSTGRES_PORT=5433
 ```
 
-Observação: no `docker-compose.yml`, o Postgres do container é exposto na porta `5433` do host.
+Observação:
+- `db:5432` funciona para processos dentro do Docker.
+- `localhost:5433` é o acesso do host (seu terminal local).
 
 ## 4) Executar ETL
 
@@ -40,84 +40,51 @@ Observação: no `docker-compose.yml`, o Postgres do container é exposto na por
 python csv-ingestion/main.py
 ```
 
-## 5) Comandos úteis
-
-Listar consultas disponíveis:
+## 5) Aplicar camada SQL de BI
 
 ```bash
-cd csv-ingestion
-python -c "from app.pipeline.queries import listar_consultas; listar_consultas()"
-cd ..
+cd sql/bi_views
+PGPASSWORD=postgres psql -h localhost -p 5433 -U postgres -d credit-card -f 00_apply_all_views.sql
+
+cd ../bi_kpis
+PGPASSWORD=postgres psql -h localhost -p 5433 -U postgres -d credit-card -f 00_apply_all_kpis.sql
 ```
 
-Executar consulta (gasto por categoria):
+## 6) Subir dashboard
 
 ```bash
-cd csv-ingestion
-python -c "
-import os
-import psycopg2
-from app.pipeline.queries import CONSULTAS
-
-conn = psycopg2.connect(
-        host=os.getenv('POSTGRES_HOST', 'localhost'),
-        database=os.getenv('POSTGRES_DB', 'credit-card'),
-        user=os.getenv('POSTGRES_USER', 'postgres'),
-        password=os.getenv('POSTGRES_PASSWORD', 'postgres'),
-        port=os.getenv('POSTGRES_PORT', '5433')
-)
-cur = conn.cursor()
-cur.execute(CONSULTAS['gasto_categoria']['query'])
-for row in cur.fetchall():
-        print(row)
-conn.close()
-"
-cd ..
+streamlit run dashboard/streamlit_app.py
 ```
 
-Conectar ao banco diretamente:
+Acesse em: `http://localhost:8501`
+
+## 7) Verificações rápidas
+
+Contagem da base carregada:
 
 ```bash
-psql -h localhost -p 5433 -U postgres -d credit-card
-```
-
-## 6) Verificações rápidas
-
-Verificar versão do Postgres:
-
-```bash
-psql -h localhost -p 5433 -U postgres -d credit-card -c "SELECT version();"
-```
-
-Contar registros carregados:
-
-```bash
-psql -h localhost -p 5433 -U postgres -d credit-card -c "
-SELECT
-        (SELECT COUNT(*) FROM fato_transacoes) AS transacoes,
-        (SELECT COUNT(*) FROM dim_data) AS datas,
-        (SELECT COUNT(*) FROM dim_cartao) AS cartoes;
+PGPASSWORD=postgres psql -h localhost -p 5433 -U postgres -d credit-card -c "
+SELECT COUNT(*) AS total_linhas
+FROM stg_credit_card_transactions;
 "
 ```
 
-Gasto total:
+Verificar se views foram aplicadas:
 
 ```bash
-psql -h localhost -p 5433 -U postgres -d credit-card -c "
-SELECT ROUND(SUM(valor_brl), 2) AS total_brl
-FROM fato_transacoes;
+PGPASSWORD=postgres psql -h localhost -p 5433 -U postgres -d credit-card -c "
+SELECT table_name
+FROM information_schema.views
+WHERE table_schema = 'public'
+  AND table_name IN ('vw_base_transacoes', 'vw_gastos_mensais', 'vw_parcelamento');
 "
 ```
 
-## 7) Troubleshooting rápido (Linux)
+## 8) Troubleshooting rápido
 
-- Erro `could not connect to server`:
-    - Verifique containers: `docker compose ps`
-    - Suba o banco: `docker compose up -d db`
-- Erro `database "credit-card" does not exist`:
-    - Crie no container: `docker exec -it postgres_db psql -U postgres -c 'CREATE DATABASE "credit-card";'`
-- Erro `No module named psycopg2`:
-    - Reative venv e reinstale dependências: `python -m pip install -r csv-ingestion/requirements.txt`
-
-
-
+- Erro `could not translate host name "db"` no Streamlit:
+  - rode no host com `POSTGRES_HOST=localhost` e `POSTGRES_PORT=5433`.
+- Erro `streamlit run yourscript.py`:
+  - use o script correto: `streamlit run dashboard/streamlit_app.py`.
+- Erro `relation "vw_*" does not exist`:
+  - reaplique `00_apply_all_views.sql` e `00_apply_all_kpis.sql`.

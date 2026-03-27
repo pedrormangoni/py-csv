@@ -6,7 +6,7 @@ SELECT
   SUM(amount_brl) AS total_brl_real,
   ROUND(SUM(amount_usd * fx_rate_brl), 2) AS total_brl_calculado,
   ROUND(SUM(amount_brl - (amount_usd * fx_rate_brl)), 2) AS diferenca_brl
-FROM stg_credit_card_transactions
+FROM vw_base_transacoes
 WHERE amount_usd > 0
   AND amount_brl > 0
 GROUP BY 1

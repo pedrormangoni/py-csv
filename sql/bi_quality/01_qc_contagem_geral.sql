@@ -3,4 +3,4 @@ SELECT
   COUNT(DISTINCT source_file_name) AS total_arquivos,
   MIN(purchase_date) AS data_minima,
   MAX(purchase_date) AS data_maxima
-FROM stg_credit_card_transactions;
+FROM vw_base_transacoes;

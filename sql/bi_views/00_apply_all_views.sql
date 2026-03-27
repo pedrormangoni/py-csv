@@ -1,3 +1,4 @@
+\i 00_vw_base_transacoes.sql
 \i 01_vw_gastos_mensais.sql
 \i 02_vw_gastos_categoria.sql
 \i 03_vw_parcelamento.sql
