@@ -1,3 +1,8 @@
+-- Arquivo: 03_qc_duplicidade_potencial.sql
+-- Objetivo: Detectar registros potencialmente duplicados por combinação de campos de negócio.
+-- Dependência: View `vw_base_transacoes`.
+-- Saída: Conjunto de grupos duplicados com coluna `repeticoes`.
+
 SELECT
   purchase_date,
   cardholder_name,

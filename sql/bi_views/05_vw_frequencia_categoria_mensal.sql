@@ -1,3 +1,8 @@
+-- Arquivo: 05_vw_frequencia_categoria_mensal.sql
+-- Objetivo: Criar visão mensal da frequência de compras por categoria.
+-- Dependência: View `vw_base_transacoes` e colunas de tempo/categoria.
+-- Saída: View `vw_frequencia_categoria_mensal` com frequência, total e ticket por mês/categoria.
+
 CREATE OR REPLACE VIEW vw_frequencia_categoria_mensal AS
 SELECT
   DATE_TRUNC('month', purchase_date)::date AS mes,

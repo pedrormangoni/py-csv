@@ -1,3 +1,8 @@
+-- Arquivo: 07_frequencia_categoria_tempo.sql
+-- Objetivo: Medir a frequência de compras por categoria ao longo do tempo.
+-- Dependência: View `vw_base_transacoes`, `purchase_date` e `category`.
+-- Saída: Série mensal por categoria com frequência e total gasto em BRL.
+
 SELECT
   DATE_TRUNC('month', purchase_date)::date AS mes,
   category,

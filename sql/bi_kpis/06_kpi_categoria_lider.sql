@@ -1,3 +1,8 @@
+-- Arquivo: 06_kpi_categoria_lider.sql
+-- Objetivo: Encontrar a categoria com maior gasto total em BRL.
+-- Dependência: View `vw_base_transacoes` e coluna `category`.
+-- Saída: Uma linha com `kpi_categoria_lider` e `kpi_valor_categoria_lider_brl`.
+
 SELECT
   category AS kpi_categoria_lider,
   total_gasto_brl AS kpi_valor_categoria_lider_brl

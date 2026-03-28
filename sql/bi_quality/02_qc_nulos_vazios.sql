@@ -1,3 +1,8 @@
+-- Arquivo: 02_qc_nulos_vazios.sql
+-- Objetivo: Quantificar campos nulos ou vazios para atributos críticos da transação.
+-- Dependência: View `vw_base_transacoes`.
+-- Saída: Lista por `campo` com `qtde_invalidos` ordenada alfabeticamente.
+
 SELECT 'purchase_date' AS campo, COUNT(*) AS qtde_invalidos
 FROM vw_base_transacoes
 WHERE purchase_date IS NULL

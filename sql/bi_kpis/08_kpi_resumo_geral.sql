@@ -1,3 +1,8 @@
+-- Arquivo: 08_kpi_resumo_geral.sql
+-- Objetivo: Consolidar os principais KPIs em uma única saída analítica.
+-- Dependência: View `vw_base_transacoes` e CTEs auxiliares (`base`, `mes_top`, `categoria_top`).
+-- Saída: Uma linha com indicadores de volume, valores, ticket, parcelamento e lideranças.
+
 WITH base AS (
   SELECT
     COUNT(*) AS qtd_compras,

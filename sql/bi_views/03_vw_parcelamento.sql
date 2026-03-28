@@ -1,3 +1,8 @@
+-- Arquivo: 03_vw_parcelamento.sql
+-- Objetivo: Classificar compras por tipo (parcelada/à vista) e agregar métricas.
+-- Dependência: View `vw_base_transacoes` e campo `installment_total`.
+-- Saída: View `vw_parcelamento` com volume, total e ticket por tipo.
+
 CREATE OR REPLACE VIEW vw_parcelamento AS
 SELECT
   CASE

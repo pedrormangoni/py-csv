@@ -1,3 +1,8 @@
+-- Arquivo: 02_vw_gastos_categoria.sql
+-- Objetivo: Consolidar gastos por categoria com participação percentual no total.
+-- Dependência: View `vw_base_transacoes` e CTE de total geral.
+-- Saída: View `vw_gastos_categoria` com métricas por categoria.
+
 CREATE OR REPLACE VIEW vw_gastos_categoria AS
 WITH total AS (
   SELECT SUM(amount_brl) AS total_geral_brl

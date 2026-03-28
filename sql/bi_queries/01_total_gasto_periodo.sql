@@ -1,3 +1,8 @@
+-- Arquivo: 01_total_gasto_periodo.sql
+-- Objetivo: Resumir gasto total e quantidade de compras no período disponível.
+-- Dependência: View `vw_base_transacoes`.
+-- Saída: Uma linha com datas limite, totais BRL/USD e total de compras.
+
 SELECT
   MIN(purchase_date) AS data_inicial,
   MAX(purchase_date) AS data_final,

@@ -1,3 +1,8 @@
+-- Arquivo: 08_qc_resumo_status.sql
+-- Objetivo: Consolidar indicadores de qualidade em um status único de monitoramento.
+-- Dependência: View `vw_base_transacoes` e CTEs de validação de nulidade, câmbio e parcelamento.
+-- Saída: Uma linha com totais e flags de criticidade para data quality.
+
 WITH total AS (
   SELECT COUNT(*) AS total_linhas
   FROM vw_base_transacoes

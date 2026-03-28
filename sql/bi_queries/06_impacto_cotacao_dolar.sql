@@ -1,3 +1,8 @@
+-- Arquivo: 06_impacto_cotacao_dolar.sql
+-- Objetivo: Avaliar impacto mensal da cotação no valor final em BRL.
+-- Dependência: View `vw_base_transacoes` e campos cambiais (`amount_usd`, `fx_rate_brl`).
+-- Saída: Série mensal com USD, cotação média, BRL real, BRL calculado e diferença.
+
 SELECT
   DATE_TRUNC('month', purchase_date)::date AS mes,
   SUM(amount_usd) AS total_usd,

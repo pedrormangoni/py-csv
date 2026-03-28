@@ -1,3 +1,8 @@
+-- Arquivo: 07_qc_outliers_valor.sql
+-- Objetivo: Detectar outliers de valor em BRL utilizando a regra de IQR (1.5x).
+-- Dependência: View `vw_base_transacoes` e cálculo de quartis com `PERCENTILE_CONT`.
+-- Saída: Registros fora dos limites inferior/superior calculados.
+
 WITH stats AS (
   SELECT
     PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY amount_brl) AS q1,

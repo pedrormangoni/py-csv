@@ -1,3 +1,8 @@
+-- Arquivo: 01_vw_gastos_mensais.sql
+-- Objetivo: Criar visão mensal de gastos e ticket médio.
+-- Dependência: View `vw_base_transacoes` e coluna `purchase_date`.
+-- Saída: View `vw_gastos_mensais` com agregações por mês.
+
 CREATE OR REPLACE VIEW vw_gastos_mensais AS
 SELECT
   DATE_TRUNC('month', purchase_date)::date AS mes,

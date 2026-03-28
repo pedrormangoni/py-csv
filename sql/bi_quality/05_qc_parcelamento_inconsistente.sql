@@ -1,3 +1,8 @@
+-- Arquivo: 05_qc_parcelamento_inconsistente.sql
+-- Objetivo: Identificar inconsistências em informações de parcelamento e compra única.
+-- Dependência: View `vw_base_transacoes` e campos de parcela (`installment_*`).
+-- Saída: Registros com regras de parcelamento inválidas.
+
 SELECT
   id,
   source_file_name,

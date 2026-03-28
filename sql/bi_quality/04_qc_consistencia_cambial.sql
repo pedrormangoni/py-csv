@@ -1,3 +1,8 @@
+-- Arquivo: 04_qc_consistencia_cambial.sql
+-- Objetivo: Validar consistência entre `amount_brl` e o cálculo `amount_usd * fx_rate_brl`.
+-- Dependência: View `vw_base_transacoes`.
+-- Saída: Registros com diferença cambial acima de tolerância (0.05 BRL).
+
 SELECT
   id,
   source_file_name,

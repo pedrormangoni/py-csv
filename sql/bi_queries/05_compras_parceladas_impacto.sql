@@ -1,3 +1,8 @@
+-- Arquivo: 05_compras_parceladas_impacto.sql
+-- Objetivo: Comparar impacto financeiro entre compras parceladas e à vista.
+-- Dependência: View `vw_base_transacoes` e campo `installment_total`.
+-- Saída: Métricas por `tipo_compra` (quantidade, total e ticket médio).
+
 SELECT
   CASE
     WHEN COALESCE(installment_total, 1) > 1 THEN 'parcelada'
