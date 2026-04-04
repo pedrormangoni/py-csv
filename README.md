@@ -15,11 +15,11 @@ Na raiz do projeto, crie/ajuste o arquivo `.env`:
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=postgres
 POSTGRES_DB=credit-card
-POSTGRES_HOST=db
+POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
 ```
 
-Se for rodar **local sem Docker**, use `POSTGRES_HOST=localhost`.
+Se for rodar com Docker, use `POSTGRES_HOST=db`.
 
 ## 2) Rodar com Docker (recomendado)
 
@@ -92,3 +92,6 @@ Os artefatos SQL já prontos estão organizados em:
 - `sql/bi_quality`: checks de qualidade e consistência dos dados.
 
 Cada pasta contém um `README.md` com instruções de execução no pgAdmin e no `psql`.
+.\.venv\Scripts\Activate.ps1
+pip install -r .\csv-ingestion\requirements.txt
+python .\csv-ingestion\main.py

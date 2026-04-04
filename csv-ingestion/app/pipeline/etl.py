@@ -27,46 +27,51 @@ def _load_env_file():
         if not line or line.startswith("#") or "=" not in line:
             continue
         key, value = line.split("=", 1)
-        os.environ.setdefault(key.strip(), value.strip())
+        os.environ[key.strip()] = value.strip()
 
 
 def _get_db_connection():
     _load_env_file()
     host = os.getenv("POSTGRES_HOST", "localhost")
+    password = os.getenv("POSTGRES_PASSWORD", "")
     db_config = {
         "host": host,
         "database": os.getenv("POSTGRES_DB", "postgres"),
         "user": os.getenv("POSTGRES_USER", "postgres"),
-        "password": os.getenv("POSTGRES_PASSWORD", "postgres"),
         "port": os.getenv("POSTGRES_PORT", "5432"),
     }
+    if password:
+        db_config["password"] = password
 
     max_attempts = 20
     retry_seconds = 2
 
-    last_error = $null
-    for ($i = 0; $i -lt $max_attempts; $i++) {
-        try {
+    last_error = None
+    for _ in range(max_attempts):
+        try:
             return psycopg2.connect(**db_config)
-        } catch [psycopg2.OperationalError] {
-            $last_error = $_.Exception
-            Start-Sleep -Seconds $retry_seconds
-        }
-    }
+        except (OperationalError, UnicodeDecodeError) as exc:
+            last_error = exc
+            time.sleep(retry_seconds)
 
-    if ($host -eq "db") {
-        $db_config["host"] = "localhost"
-        for ($i = 0; $i -lt 3; $i++) {
-            try {
+    if host != "localhost":
+        db_config["host"] = "localhost"
+        for _ in range(3):
+            try:
                 return psycopg2.connect(**db_config)
-            } catch [psycopg2.OperationalError] {
-                $last_error = $_.Exception
-                Start-Sleep -Seconds $retry_seconds
-            }
-        }
-    }
+            except (OperationalError, UnicodeDecodeError) as exc:
+                last_error = exc
+                time.sleep(retry_seconds)
 
-    throw $last_error
+    if last_error is not None:
+        if isinstance(last_error, UnicodeDecodeError):
+            raise RuntimeError(
+                "Falha ao conectar no PostgreSQL local. Em Windows, esse erro costuma acontecer quando o servidor exige senha "
+                "(ou usuário/senha estão incorretos). Verifique POSTGRES_USER/POSTGRES_PASSWORD/POSTGRES_DB no .env e a configuração "
+                "de autenticação (pg_hba.conf)."
+            ) from last_error
+        raise last_error
+    raise RuntimeError("Falha inesperada ao conectar no banco PostgreSQL")
 
 
 def _ensure_tables(conn):
