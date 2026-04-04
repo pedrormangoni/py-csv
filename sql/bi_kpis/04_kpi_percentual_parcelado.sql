@@ -1,3 +1,8 @@
+-- Arquivo: 04_kpi_percentual_parcelado.sql
+-- Objetivo: Medir o percentual de compras parceladas sobre o total de compras.
+-- Dependência: View `vw_base_transacoes` e campos de parcelamento.
+-- Saída: Uma linha com a coluna `kpi_percentual_compras_parceladas` em percentual.
+
 SELECT
   ROUND(
     COALESCE(
@@ -7,4 +12,5 @@ SELECT
     ),
     2
   ) AS kpi_percentual_compras_parceladas
-FROM stg_credit_card_transactions;
+FROM vw_base_transacoes
+WHERE amount_brl > 0;

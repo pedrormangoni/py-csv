@@ -1,8 +1,13 @@
+-- Arquivo: 07_qc_outliers_valor.sql
+-- Objetivo: Detectar outliers de valor em BRL utilizando a regra de IQR (1.5x).
+-- Dependência: View `vw_base_transacoes` e cálculo de quartis com `PERCENTILE_CONT`.
+-- Saída: Registros fora dos limites inferior/superior calculados.
+
 WITH stats AS (
   SELECT
     PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY amount_brl) AS q1,
     PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY amount_brl) AS q3
-  FROM stg_credit_card_transactions
+  FROM vw_base_transacoes
 ),
 limites AS (
   SELECT
@@ -23,7 +28,7 @@ SELECT
   t.amount_brl,
   l.limite_inferior,
   l.limite_superior
-FROM stg_credit_card_transactions t
+FROM vw_base_transacoes t
 CROSS JOIN limites l
 WHERE t.amount_brl < l.limite_inferior OR t.amount_brl > l.limite_superior
 ORDER BY t.amount_brl DESC, t.purchase_date DESC;

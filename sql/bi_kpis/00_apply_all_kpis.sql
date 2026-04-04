@@ -1,3 +1,8 @@
+-- Arquivo: 00_apply_all_kpis.sql
+-- Objetivo: Executar, em sequência, todos os scripts de KPI da camada BI.
+-- Dependência: Scripts `01` a `08` da pasta `bi_kpis` e a view `vw_base_transacoes`.
+-- Saída: Resultado individual de cada KPI executado no contexto do cliente SQL (psql).
+
 \i 01_kpi_total_gasto_brl.sql
 \i 02_kpi_total_gasto_usd.sql
 \i 03_kpi_ticket_medio_brl.sql

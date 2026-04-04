@@ -4,19 +4,10 @@ import csv
 import shutil
 from pathlib import Path
 import logging
-
+from app.api.config import EXPECTED_COLUMNS, FILE_DELIMITER
 logging.basicConfig(level=logging.INFO)
 
-EXPECTED_COLUMNS = [
-    'Data de Compra', 
-    'Nome no Cartão', 
-    'Final do Cartão',
-    'Categoria',
-    'Descrição',
-    'Parcela',
-    'Valor (em US$)',
-    'Cotação (em R$)',
-    'Valor (em R$)']  # Colunas esperadas
+ # Colunas esperadas
 
 # Função para validar as colunas do arquivo CSV
 def validate_columns_file(file_path: Path) -> bool:
@@ -30,8 +21,8 @@ def validate_columns_file(file_path: Path) -> bool:
     try:
         # Lê o arquivo CSV e verifica as colunas
         with open(file_path, "r", encoding="utf-8") as csvfile:
-            # O delimitador é definido como ';' para arquivos CSV
-            reader = csv.reader(csvfile, delimiter=";")
+            # O delimitador é definido como ';' (no arquivo de configuração) para arquivos CSV
+            reader = csv.reader(csvfile, delimiter=FILE_DELIMITER)
             # Lê a primeira linha do arquivo para obter as colunas
             header = next(reader)
 

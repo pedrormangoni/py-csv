@@ -1,254 +1,90 @@
-QUICKSTART - Data Warehouse em 5 minutos
+QUICKSTART (Linux)
 
-Este arquivo fornece os comandos essenciais para rodar o projeto rapidamente.
+Comandos essenciais para rodar ETL + SQL analítico + dashboard.
 
-1. ATIVAR AMBIENTE
-# PowerShell (Windows):
-.\.venv\Scripts\Activate.ps1
+## 1) Preparar ambiente Python
 
-# Bash/Linux:
-source venv/bin/activate
+Na raiz do projeto:
 
-2. INSTALAR DEPENDÊNCIAS
-pip install -r csv-ingestion/requirements.txt
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r csv-ingestion/requirements.txt
+```
 
-3. CONFIGURAR POSTGRESQL
-# Opção A: Local (Windows)
-# - Iniciar PostgreSQL
-# - Criar banco: psql -U postgres -c "CREATE DATABASE csv_dw;"
+## 2) Subir PostgreSQL com Docker
 
-# Opção B: Docker
-cd csv-ingestion
-docker-compose up -d
-cd ..
+```bash
+docker compose up -d db
+docker compose ps
+```
 
-4. CONFIGURAR VARIÁVEIS (PowerShell)
-$env:POSTGRES_HOST = "localhost"
-$env:POSTGRES_DB = "csv_dw"
-$env:POSTGRES_USER = "postgres"
-$env:POSTGRES_PASSWORD = "postgres"
-$env:POSTGRES_PORT = "5432"
+## 3) Variáveis de ambiente (execução local)
 
-5. EXECUTAR ETL
-cd csv-ingestion
-python -c "from app.pipeline.etl import executar_etl; executar_etl()"
-cd ..
+```bash
+export POSTGRES_HOST=localhost
+export POSTGRES_DB=credit-card
+export POSTGRES_USER=postgres
+export POSTGRES_PASSWORD=postgres
+export POSTGRES_PORT=5433
+```
 
-COMANDOS ÚTEIS
+Observação:
+- `db:5432` funciona para processos dentro do Docker.
+- `localhost:5433` é o acesso do host (seu terminal local).
 
-# Listar consultas disponíveis
-python -c "from app.pipeline.queries import listar_consultas; listar_consultas()"
+## 4) Executar ETL
 
-# Executar consulta: Gasto por Categoria
-python -c "
-import psycopg2
-from app.pipeline.queries import CONSULTAS
+```bash
+python csv-ingestion/main.py
+```
 
-conn = psycopg2.connect(
-    host='localhost', database='csv_dw',
-    user='postgres', password='postgres'
-)
-cur = conn.cursor()
-cur.execute(CONSULTAS['gasto_categoria']['query'])
-for row in cur.fetchall():
-    print(row)
-conn.close()
+## 5) Aplicar camada SQL de BI
+
+```bash
+cd sql/bi_views
+PGPASSWORD=postgres psql -h localhost -p 5433 -U postgres -d credit-card -f 00_apply_all_views.sql
+
+cd ../bi_kpis
+PGPASSWORD=postgres psql -h localhost -p 5433 -U postgres -d credit-card -f 00_apply_all_kpis.sql
+```
+
+## 6) Subir dashboard
+
+```bash
+streamlit run dashboard/streamlit_app.py
+```
+
+Acesse em: `http://localhost:8501`
+
+## 7) Verificações rápidas
+
+Contagem da base carregada:
+
+```bash
+PGPASSWORD=postgres psql -h localhost -p 5433 -U postgres -d credit-card -c "
+SELECT COUNT(*) AS total_linhas
+FROM stg_credit_card_transactions;
 "
+```
 
-# Conectar ao banco diretamente
-psql -U postgres -d csv_dw
+Verificar se views foram aplicadas:
 
-VERIFICAÇÕES
-
-# Verificar se PostgreSQL está rodando
-psql -U postgres -c "SELECT version();"
-
-# Contar registros no DW
-psql -U postgres -d csv_dw -c "
-SELECT 
-    (SELECT COUNT(*) FROM fato_transacoes) as transacoes,
-    (SELECT COUNT(*) FROM dim_data) as datas,
-    (SELECT COUNT(*) FROM dim_cartao) as cartoes;
+```bash
+PGPASSWORD=postgres psql -h localhost -p 5433 -U postgres -d credit-card -c "
+SELECT table_name
+FROM information_schema.views
+WHERE table_schema = 'public'
+  AND table_name IN ('vw_base_transacoes', 'vw_gastos_mensais', 'vw_parcelamento');
 "
+```
 
-# Gasto total
-psql -U postgres -d csv_dw -c "
-SELECT ROUND(SUM(valor_brl), 2) as total_brl 
-FROM fato_transacoes;
-"
+## 8) Troubleshooting rápido
 
-CONSULTAS RÁPIDAS (SQL)
-
-# Q1: Quanto gastei no total?
-SELECT ROUND(SUM(valor_brl), 2) FROM fato_transacoes;
-
-# Q2: Em qual categoria gastei mais?
-SELECT categoria, SUM(valor_brl) as total 
-FROM fato_transacoes ft
-JOIN dim_categoria dc ON ft.id_categoria = dc.id_categoria
-GROUP BY categoria ORDER BY total DESC LIMIT 1;
-
-# Q3: Qual foi meu maior gasto?
-SELECT ROUND(MAX(valor_brl), 2) FROM fato_transacoes;
-
-# Q4: Qual é meu gasto médio?
-SELECT ROUND(AVG(valor_brl), 2) FROM fato_transacoes;
-
-# Q5: Top 5 comerciantes
-SELECT nome_comerciante, SUM(valor_brl) as total 
-FROM fato_transacoes ft
-JOIN dim_comerciante dm ON ft.id_comerciante = dm.id_comerciante
-GROUP BY nome_comerciante ORDER BY total DESC LIMIT 5;
-
-TROUBLESHOOTING RÁPIDO
-
-# Erro: "could not connect to server"
-# → Verificar se PostgreSQL está rodando
-# → Windows: services.msc ou Start-Service postgresql-x64-15
-
-# Erro: "database csv_dw does not exist"
-# → Criar banco: psql -U postgres -c "CREATE DATABASE csv_dw;"
-
-# Erro: "UNIQUE constraint violated"
-# → Limpar dados: TRUNCATE TABLE fato_transacoes CASCADE;
-
-# Erro: "no module named psycopg2"
-# → Instalar: pip install psycopg2-binary
-
-# ============================================================================
-# DOCUMENTAÇÃO RÁPIDA
-# ============================================================================
-
-Documentos:
-  - MODELAGEM_STAR_SCHEMA.md     - Modelo (20 min)
-  - DICIONARIO_DADOS.md          - Campos (30 min)
-  - README_DATA_WAREHOUSE.md     - Guia (25 min)
-  - GUIA_PRATICO_EXECUCAO.md    - Steps (15 min)
-  - SUMARIO_EXECUTIVO.md         - Resumo (10 min)
-  - INDICE.md                    - Links (5 min)
-
-Código:
-  - csv-ingestion/app/pipeline/schema.py   - DDL
-  - csv-ingestion/app/pipeline/etl.py      - ETL
-  - csv-ingestion/app/pipeline/queries.py  - SQL
-
-# ============================================================================
-# ESTRUTURA DO PROJETO
-# ============================================================================
-
-Star Schema:
-  dim_data ─────────┐
-  dim_cartao ───────┼──→ fato_transacoes
-  dim_categoria ────┤
-  dim_comerciante ──┘
-
-Dados Esperados:
-  • ~1000 transações
-  • ~50 comerciantes
-  • ~15 categorias
-  • Período: Mar/2025 - Jan/2026
-
-# ============================================================================
-# PRÓXIMOS PASSOS
-# ============================================================================
-
-1. Instalar dependências
-2. Configurar PostgreSQL
-3. Executar ETL
-4. Executar consultas
-5. Criar dashboard (Metabase/Power BI)
-6. Agendar ETL diária
-7. Deploy em produção
-
-# ============================================================================
-# CONTATO / DÚVIDAS
-# ============================================================================
-
-Ver documentação em INDICE.md para navegação rápida
-ou abrir arquivo correspondente:
-  - Modelagem?       -> MODELAGEM_STAR_SCHEMA.md
-  - Campos?          -> DICIONARIO_DADOS.md
-  - Como rodar?      -> GUIA_PRATICO_EXECUCAO.md
-  - Código?          -> README_DATA_WAREHOUSE.md
-  - Resumo?          -> SUMARIO_EXECUTIVO.md
-  - Índice?          -> INDICE.md
-
-# ============================================================================
-"""
-
-# ============================================================================
-# EXEMPLO: EXECUTAR TUDO EM PYTHON
-# ============================================================================
-
-import os
-import psycopg2
-from app.pipeline.schema import create_database_tables
-from app.pipeline.etl import executar_etl
-from app.pipeline.queries import CONSULTAS
-
-def run_complete_pipeline():
-    """Executa o pipeline completo"""
-    
-    # 1. Conectar ao banco
-    conn = psycopg2.connect(
-        host=os.getenv("POSTGRES_HOST", "localhost"),
-        database=os.getenv("POSTGRES_DB", "csv_dw"),
-        user=os.getenv("POSTGRES_USER", "postgres"),
-        password=os.getenv("POSTGRES_PASSWORD", "postgres"),
-        port=os.getenv("POSTGRES_PORT", "5432")
-    )
-    print("✓ Conectado ao PostgreSQL")
-    
-    # 2. Criar tabelas
-    create_database_tables(conn)
-    conn.close()
-    
-    # 3. Executar ETL
-    executar_etl()
-    
-    # 4. Executar algumas consultas
-    conn = psycopg2.connect(
-        host=os.getenv("POSTGRES_HOST", "localhost"),
-        database=os.getenv("POSTGRES_DB", "csv_dw"),
-        user=os.getenv("POSTGRES_USER", "postgres"),
-        password=os.getenv("POSTGRES_PASSWORD", "postgres"),
-        port=os.getenv("POSTGRES_PORT", "5432")
-    )
-    
-    cur = conn.cursor()
-    
-    # Query 1: Resumo geral
-    print("\n" + "="*60)
-    print("RESUMO GERAL")
-    print("="*60)
-    cur.execute(CONSULTAS['resumo_geral']['query'])
-    for row in cur.fetchall():
-        print(f"{row[0]}: {row[1]}")
-    
-    # Query 2: Gasto por categoria
-    print("\n" + "="*60)
-    print("GASTO POR CATEGORIA")
-    print("="*60)
-    cur.execute(CONSULTAS['gasto_categoria']['query'])
-    cols = [desc[0] for desc in cur.description]
-    print(f"{cols[0]:<40} {cols[1]:<10} {cols[2]:<15}")
-    print("-" * 65)
-    for row in cur.fetchall():
-        print(f"{row[0]:<40} {row[1]:<10} {row[2]:<15}")
-    
-    # Query 3: Top comerciantes
-    print("\n" + "="*60)
-    print("TOP 10 COMERCIANTES")
-    print("="*60)
-    cur.execute(CONSULTAS['top_comerciantes']['query'])
-    cols = [desc[0] for desc in cur.description]
-    print(f"{cols[0]:<35} {cols[1]:<10} {cols[2]:<15}")
-    print("-" * 60)
-    for row in cur.fetchall():
-        print(f"{row[0]:<35} {row[1]:<10} {row[2]:<15}")
-    
-    conn.close()
-    print("\n✓ Pipeline completo!")
-
-if __name__ == "__main__":
-    run_complete_pipeline()
+- Erro `could not translate host name "db"` no Streamlit:
+  - rode no host com `POSTGRES_HOST=localhost` e `POSTGRES_PORT=5433`.
+- Erro `streamlit run yourscript.py`:
+  - use o script correto: `streamlit run dashboard/streamlit_app.py`.
+- Erro `relation "vw_*" does not exist`:
+  - reaplique `00_apply_all_views.sql` e `00_apply_all_kpis.sql`.

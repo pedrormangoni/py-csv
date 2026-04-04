@@ -4,11 +4,17 @@ Este diretório contém views para consumo em pgAdmin e ferramentas de BI.
 
 ## Views disponíveis
 
+- `vw_base_transacoes`: camada base de dados transacionais para desacoplar os SQLs da tabela física.
 - `vw_gastos_mensais`: total, volume e ticket médio por mês.
 - `vw_gastos_categoria`: distribuição de gastos por categoria com percentual.
 - `vw_parcelamento`: comparação entre compras parceladas e à vista.
 - `vw_fx_impacto_mensal`: impacto mensal da cotação sobre compras em USD.
 - `vw_frequencia_categoria_mensal`: frequência e valor por categoria ao longo do tempo.
+
+## Padronização para troca de tema/fonte
+
+Todos os SQLs analíticos (queries, KPIs, views e quality checks) passam a ler de `vw_base_transacoes`.
+Para trocar facilmente a fonte de dados, ajuste apenas a definição em `00_vw_base_transacoes.sql`.
 
 ## Como aplicar
 

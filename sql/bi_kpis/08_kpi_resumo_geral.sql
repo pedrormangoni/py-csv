@@ -1,3 +1,8 @@
+-- Arquivo: 08_kpi_resumo_geral.sql
+-- Objetivo: Consolidar os principais KPIs em uma única saída analítica.
+-- Dependência: View `vw_base_transacoes` e CTEs auxiliares (`base`, `mes_top`, `categoria_top`).
+-- Saída: Uma linha com indicadores de volume, valores, ticket, parcelamento e lideranças.
+
 WITH base AS (
   SELECT
     COUNT(*) AS qtd_compras,
@@ -12,13 +17,15 @@ WITH base AS (
       ),
       2
     ) AS percentual_parcelado
-  FROM stg_credit_card_transactions
+  FROM vw_base_transacoes
+  WHERE amount_brl > 0
 ),
 mes_top AS (
   SELECT
     DATE_TRUNC('month', purchase_date)::date AS mes,
     SUM(amount_brl) AS valor
-  FROM stg_credit_card_transactions
+  FROM vw_base_transacoes
+  WHERE amount_brl > 0
   GROUP BY 1
   ORDER BY valor DESC, mes ASC
   LIMIT 1
@@ -27,7 +34,8 @@ categoria_top AS (
   SELECT
     category,
     SUM(amount_brl) AS valor
-  FROM stg_credit_card_transactions
+  FROM vw_base_transacoes
+  WHERE amount_brl > 0
   GROUP BY 1
   ORDER BY valor DESC, category ASC
   LIMIT 1

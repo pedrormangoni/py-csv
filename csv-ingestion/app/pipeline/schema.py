@@ -99,11 +99,11 @@ def create_database_tables(conn):
                 cur.execute(command)
         
         conn.commit()
-        print("✓ Tabelas criadas com sucesso!")
+        print("Tabelas criadas com sucesso!")
         cur.close()
         
     except Exception as e:
-        print(f"✗ Erro ao criar tabelas: {e}")
+        print(f"Erro ao criar tabelas: {e}")
         conn.rollback()
         raise
 

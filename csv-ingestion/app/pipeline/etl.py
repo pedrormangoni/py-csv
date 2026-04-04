@@ -1,6 +1,7 @@
 ﻿import csv
 import hashlib
 import os
+import re
 import time
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
@@ -10,11 +11,25 @@ import psycopg2
 from psycopg2 import OperationalError
 
 from app.api.upload import (
-    EXPECTED_COLUMNS,
     get_unread_csv_files,
     move_file_to_read,
     validate_columns_file,
 )
+
+from app.api.config import (
+    EXPECTED_COLUMNS,
+    FILE_DELIMITER,
+    STAGING_TRANSACTIONS_TABLE,
+)
+
+
+def _safe_sql_identifier(value: str) -> str:
+    if not re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", value or ""):
+        raise ValueError(f"Identificador SQL inválido: {value}")
+    return value
+
+
+STAGING_TABLE = _safe_sql_identifier(STAGING_TRANSACTIONS_TABLE)
 
 
 def _load_env_file():
@@ -29,8 +44,9 @@ def _load_env_file():
         key, value = line.split("=", 1)
         os.environ[key.strip()] = value.strip()
 
-
+# Função para conectar ao banco de dados
 def _get_db_connection():
+    # Coleta as configurações a partir das variáveis de ambiente, com fallback para valores padrão
     _load_env_file()
     host = os.getenv("POSTGRES_HOST", "localhost")
     password = os.getenv("POSTGRES_PASSWORD", "")
@@ -42,7 +58,6 @@ def _get_db_connection():
     }
     if password:
         db_config["password"] = password
-
     max_attempts = 20
     retry_seconds = 2
 
@@ -73,7 +88,7 @@ def _get_db_connection():
         raise last_error
     raise RuntimeError("Falha inesperada ao conectar no banco PostgreSQL")
 
-
+# Função para criar as tabelas do Data Warehouse
 def _ensure_tables(conn):
     with conn.cursor() as cur:
         cur.execute(
@@ -94,8 +109,8 @@ def _ensure_tables(conn):
             """
         )
         cur.execute(
-            """
-            CREATE TABLE IF NOT EXISTS stg_credit_card_transactions (
+            f"""
+            CREATE TABLE IF NOT EXISTS {STAGING_TABLE} (
                 id BIGSERIAL PRIMARY KEY,
                 batch_id BIGINT NOT NULL REFERENCES etl_file_batches(id),
                 row_number INTEGER NOT NULL,
@@ -118,7 +133,7 @@ def _ensure_tables(conn):
             """
         )
 
-
+# Função para calcular o hash do arquivo
 def _compute_file_hash(file_path: Path) -> str:
     sha = hashlib.sha256()
     with open(file_path, "rb") as file_obj:
@@ -126,11 +141,11 @@ def _compute_file_hash(file_path: Path) -> str:
             sha.update(chunk)
     return sha.hexdigest()
 
-
+# Função para normalizar texto (remover espaços extras)
 def _normalize_text(value: str) -> str:
     return " ".join((value or "").split())
 
-
+# Função para converter string numérica para Decimal, tratando vírgulas e pontos  
 def _parse_decimal(value: str) -> Decimal:
     normalized = (value or "").strip().replace(",", ".")
     if normalized == "":
@@ -140,14 +155,14 @@ def _parse_decimal(value: str) -> Decimal:
     except InvalidOperation as exc:
         raise ValueError(f"Valor numérico inválido: {value}") from exc
 
-
+# Função para processar a data de compra no formato "dd/mm/yyyy"
 def _parse_purchase_date(value: str):
     try:
         return datetime.strptime(value.strip(), "%d/%m/%Y").date()
     except ValueError as exc:
         raise ValueError(f"Data inválida: {value}") from exc
 
-
+# Função para processar a parcela, identificando se é única ou múltipla (ex: "2/3")
 def _parse_installment(value: str):
     cleaned = (value or "").strip()
     if cleaned.lower() in {"única", "unica"}:
@@ -163,6 +178,14 @@ def _parse_installment(value: str):
     return cleaned, None, None
 
 
+def _is_payment_row(description: str, amount_usd: Decimal, amount_brl: Decimal) -> bool:
+    if amount_brl < 0 or amount_usd < 0:
+        return True
+
+    normalized_description = _normalize_text(description).lower()
+    return "pagamento" in normalized_description
+
+# 
 def _hash_row(row: dict) -> str:
     raw = "|".join(
         [
@@ -211,7 +234,7 @@ def _upsert_batch_start(conn, file_path: Path, file_hash: str):
 def _parse_rows(file_path: Path):
     rows = []
     with open(file_path, "r", encoding="utf-8") as csv_file:
-        reader = csv.DictReader(csv_file, delimiter=";")
+        reader = csv.DictReader(csv_file, delimiter=FILE_DELIMITER)
         if reader.fieldnames != EXPECTED_COLUMNS:
             raise ValueError(
                 f"Cabeçalho inválido em {file_path.name}. Esperado: {EXPECTED_COLUMNS}; recebido: {reader.fieldnames}"
@@ -222,6 +245,11 @@ def _parse_rows(file_path: Path):
             installment_raw, installment_number, installment_total = _parse_installment(
                 row["Parcela"]
             )
+            amount_usd = _parse_decimal(row["Valor (em US$)"])
+            amount_brl = _parse_decimal(row["Valor (em R$)"])
+
+            if _is_payment_row(row["Descrição"], amount_usd, amount_brl):
+                continue
 
             rows.append(
                 {
@@ -235,9 +263,9 @@ def _parse_rows(file_path: Path):
                     "installment_raw": installment_raw,
                     "installment_number": installment_number,
                     "installment_total": installment_total,
-                    "amount_usd": _parse_decimal(row["Valor (em US$)"]),
+                    "amount_usd": amount_usd,
                     "fx_rate_brl": _parse_decimal(row["Cotação (em R$)"]),
-                    "amount_brl": _parse_decimal(row["Valor (em R$)"]),
+                    "amount_brl": amount_brl,
                 }
             )
 
@@ -246,7 +274,7 @@ def _parse_rows(file_path: Path):
 
 def _delete_previous_rows(conn, batch_id: int):
     with conn.cursor() as cur:
-        cur.execute("DELETE FROM stg_credit_card_transactions WHERE batch_id = %s", (batch_id,))
+        cur.execute(f"DELETE FROM {STAGING_TABLE} WHERE batch_id = %s", (batch_id,))
 
 
 def _insert_rows(conn, batch_id: int, source_file_name: str, rows: list[dict]):
@@ -254,8 +282,8 @@ def _insert_rows(conn, batch_id: int, source_file_name: str, rows: list[dict]):
     with conn.cursor() as cur:
         for row in rows:
             cur.execute(
-                """
-                INSERT INTO stg_credit_card_transactions (
+                f"""
+                INSERT INTO {STAGING_TABLE} (
                     batch_id,
                     row_number,
                     row_hash,
