@@ -9,3 +9,5 @@
 \i 03_vw_parcelamento.sql
 \i 04_vw_fx_impacto_mensal.sql
 \i 05_vw_frequencia_categoria_mensal.sql
+\i 06_vw_gastos_semanais_mes.sql
+\i 07_vw_compras_recorrentes.sql

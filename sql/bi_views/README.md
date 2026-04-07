@@ -4,12 +4,23 @@ Este diretório contém views para consumo em pgAdmin e ferramentas de BI.
 
 ## Views disponíveis
 
-- `vw_base_transacoes`: camada base de dados transacionais para desacoplar os SQLs da tabela física.
+- `vw_base_transacoes`: camada base com atributos derivados de tempo, parcelamento, cartão, câmbio e recorrência.
 - `vw_gastos_mensais`: total, volume e ticket médio por mês.
 - `vw_gastos_categoria`: distribuição de gastos por categoria com percentual.
 - `vw_parcelamento`: comparação entre compras parceladas e à vista.
 - `vw_fx_impacto_mensal`: impacto mensal da cotação sobre compras em USD.
 - `vw_frequencia_categoria_mensal`: frequência e valor por categoria ao longo do tempo.
+- `vw_gastos_semanais_mes`: ranking das semanas com maior gasto em cada mês.
+- `vw_compras_recorrentes`: agrupamento de compras recorrentes por descrição, categoria, cartão e valor.
+
+## Modelo semântico sugerido para BI
+
+- Fato principal: `vw_base_transacoes`
+- Dimensão de tempo: `purchase_date`, `purchase_month`, `purchase_week`, `purchase_year`, `purchase_year_month`
+- Dimensão de cartão: `cardholder_name`, `card_last4`, `card_key`
+- Dimensão de categoria: `category`, `category_key`
+- Dimensão de parcelamento: `purchase_type`, `installment_number`, `installment_total`, `is_installment`
+- Métricas centrais: `amount_brl`, `amount_usd`, `fx_rate_brl`, `fx_impact_brl`, `recurring_occurrences`
 
 ## Padronização para troca de tema/fonte
 

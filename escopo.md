@@ -50,11 +50,11 @@ Juros e encargos
 Localização das compras
 
 Perguntas de Negócio
-Qual é o valor total gasto no período analisado?
+Qual é o valor total gasto no período analisado? Ok
 Permite compreender o volume total de despesas realizadas e avaliar o comportamento geral de consumo no período.
-Como os gastos evoluem ao longo do tempo (por mês)?
+Como os gastos evoluem ao longo do tempo (por mês)? Ok
 Identifica tendências de aumento ou redução de despesas, além de possíveis padrões de consumo.
-Qual é a distribuição de gastos por categoria?
+Qual é a distribuição de gastos por categoria? Ok
 Mostra quais tipos de despesas representam a maior parte do orçamento, auxiliando na identificação de oportunidades de redução de gastos.
 Qual é o valor médio das compras realizadas (ticket médio)?
 Ajuda a compreender o padrão de valor das transações e identificar se as compras tendem a ser de alto ou baixo valor.
