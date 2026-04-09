@@ -1,7 +1,4 @@
--- Arquivo: 00_vw_base_transacoes.sql
--- Objetivo: Definir a view base de transações com atributos derivados para BI.
--- Dependência: Tabela `stg_credit_card_transactions`.
--- Saída: View `vw_base_transacoes` pronta para Power BI, KPIs e consultas analíticas.
+-- Objetivo: Definir a view base de transações com atributos derivados para BI.23
 
 CREATE OR REPLACE VIEW vw_base_transacoes AS
 WITH base AS (

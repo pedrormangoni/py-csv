@@ -34,7 +34,7 @@ def validate_columns_file(file_path: Path) -> bool:
         
     # Captura qualquer exceção que possa ocorrer durante a leitura do arquivo
     except Exception as e:
-        logging.error(f"Erro ao validar {file_path.name}: {e}")
+        logging.error(f"Erro ao validar {file_path.name}: {e}")11
         return False
 
 

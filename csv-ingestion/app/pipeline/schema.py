@@ -65,7 +65,7 @@ SELECT DISTINCT
         ELSE FALSE
     END AS eh_parcelada
 FROM vw_base_transacoes;
-
+1
 CREATE OR REPLACE VIEW vw_fato_transacoes AS
 SELECT
     id AS transacao_id,

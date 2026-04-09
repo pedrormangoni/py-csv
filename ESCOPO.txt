@@ -1,0 +1,31 @@
+- data da compra;
+- nome do cartão;
+- final do cartão;
+- categoria;
+- descrição;
+- parcela;
+- valor em dólar;
+- cotação em reais;
+- valor final da compra em reais.
+
+Dentro do escopo:
+- gastos com cartão de crédito;
+- compras nacionais e internacionais;
+- análises por tempo, categoria, parcelamento e câmbio.
+
+Fora do escopo:
+- salário;
+- renda mensal;
+- limite do cartão;
+- juros e encargos;
+- data de fechamento da fatura;
+- localização das compras.
+
+
+1. Qual é o valor total gasto no período?23
+2. Como os gastos evoluem ao longo do tempo?
+3. Qual é a distribuição de gastos por categoria?
+4. Qual é o ticket médio das compras?
+5. Quantas compras são parceladas e qual o impacto delas no total gasto?
+6. Qual categoria apresenta maior frequência de compras ao longo do tempo?
+7. Quais compras apresentam comportamento recorrente?

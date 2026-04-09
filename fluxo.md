@@ -115,11 +115,6 @@ Durante `_parse_rows()`:
 - `read/`: arquivos já processados com sucesso.
 - `unread/`: fila de entrada de arquivos pendentes.
 
-### `tests`
-
-- `tests/conftest.py`: ajuste de `sys.path` para importações nos testes.
-- `tests/unit/test_upload_and_etl_unit.py`: testes unitários de validação e parsers.
-- `tests/integration/test_etl_integration.py`: testes de integração ETL + PostgreSQL.
 
 ### 3.3 Camada SQL (`sql`)
 
@@ -148,11 +143,3 @@ Durante `_parse_rows()`:
   - parsing e hashing em `etl.py`;
   - consultas SQL que dependem desses campos.
 - A execução local depende de variáveis `POSTGRES_*` coerentes com porta/host do ambiente.
-
-## 5. Sequência recomendada para quem vai evoluir o sistema
-
-1. Ler `README.md` e `QUICKSTART.md`.
-2. Subir banco (`docker compose up -d db`) e executar ETL (`python csv-ingestion/main.py`).
-3. Validar carga nas tabelas de staging e lote.
-4. Rodar testes unitários e de integração.
-5. Aplicar scripts em `sql/bi_views`, `sql/bi_kpis` e `sql/bi_quality` conforme objetivo da análise.
